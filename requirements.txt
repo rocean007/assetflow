@@ -2,29 +2,30 @@
 flask>=3.0.0
 flask-cors>=4.0.0
 flask-socketio>=5.3.0
+eventlet>=0.36.0
 
 # HTTP / async data fetching
 requests>=2.31.0
 aiohttp>=3.9.0
 
 # Data parsing
-feedparser>=6.0.10        # RSS/Atom feeds (20 news + 12 central bank feeds)
-beautifulsoup4>=4.12.0    # HTML scraping
-lxml>=5.0.0               # XML/HTML parser backend
+feedparser>=6.0.10
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
 
 # Financial data
-yfinance>=0.2.36          # Yahoo Finance price, OHLCV, options, insiders
-pandas>=2.1.0             # Data manipulation
+yfinance>=0.2.36
+pandas>=2.1.0
 
 # LLM provider clients
-openai>=1.30.0            # OpenAI + OpenRouter compatible
-anthropic>=0.25.0         # Anthropic Claude
-groq>=0.9.0               # Groq
-huggingface-hub>=0.23.0   # HuggingFace inference API
+openai>=1.30.0
+anthropic>=0.25.0
+groq>=0.9.0
+huggingface-hub>=0.23.0
 
 # Utilities
-python-dotenv>=1.0.0      # .env loading
-praw>=7.7.0               # Reddit API (r/wallstreetbets etc.)
+python-dotenv>=1.0.0
+praw>=7.7.0
 
 # Optional / quality of life
-tenacity>=8.2.0           # Retry logic for LLM calls
+tenacity>=8.2.0
