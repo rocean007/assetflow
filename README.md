@@ -8,7 +8,9 @@ A multi-agent probabilistic asset prediction platform that runs entirely on your
 
 - **Node.js 18 or higher** — download at [nodejs.org](https://nodejs.org)
 - **Yarn** — install with `npm install -g yarn`
-- **At least one AI API key**, or Ollama installed locally (free, no key needed)
+- **API key: optional** — AssetFlow ships with 8 built-in free agents (Pollinations.ai + HuggingFace) that require no key, no signup, and no configuration. You can run a full analysis immediately after install.
+
+> **Zero-config quick start:** Install → `yarn dev` → open browser → click Analyze → done. The built-in free agents handle everything automatically.
 
 ---
 
@@ -34,9 +36,11 @@ Open **http://localhost:5173** in your browser.
 
 ## First run — three steps
 
-### Step 1: Add an agent
+AssetFlow comes with **8 built-in free agents** pre-configured and ready to use the moment you open it. You don't need to add anything to run your first analysis. The built-in agents use [Pollinations.ai](https://pollinations.ai) (specialist agents) and HuggingFace free inference (synthesizer) — both completely free with no signup.
 
-Go to the **Agents** tab. Click **Add Agent** and fill in:
+### Step 1: (Optional) Add your own agents
+
+The built-in free agents work out of the box. If you want better quality, go to the **Agents** tab and add your own. Click **Add Agent** and fill in:
 
 | Field | What to put |
 |-------|-------------|
@@ -111,9 +115,17 @@ AssetFlow has three phases. Each agent role belongs to one phase:
 | **OpenAI** | No | GPT-4o-mini is cheap. Get key at platform.openai.com |
 | **Anthropic** | No | Claude Haiku is fast and affordable. Get key at console.anthropic.com |
 
-### Getting started for free
+### Built-in agents (zero setup)
 
-The fastest zero-cost setup uses Groq:
+AssetFlow pre-installs 8 free agents on first run:
+- **7 specialist agents** (macro, sentiment, social, supply chain, technical, geopolitical, sector) — Pollinations.ai / Mistral, completely free
+- **1 synthesizer agent** — HuggingFace Zephyr-7B, completely free
+
+These appear in the Agents tab marked with `★ free built-in`. You can disable, edit, or delete them at any time.
+
+### Getting started for free (better quality)
+
+The built-in agents work but are limited. For better results, use Groq's free tier:
 
 1. Go to [console.groq.com](https://console.groq.com) and create a free account
 2. Generate an API key
