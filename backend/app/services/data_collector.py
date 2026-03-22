@@ -47,9 +47,6 @@ def safe_get(url: str, params: dict = None, timeout: int = 10) -> Optional[dict]
 
 def safe_feed(url: str, source: str, max_items: int = 6) -> list:
     try:
-        feed = feedparser.parse(url, request_headers={'Connection': 'close'}, 
-                                agent='AssetFlow/2.0', handlers=[])
-        # feedparser doesn't support timeout natively — fetch manually instead
         r = SESSION.get(url, timeout=8)
         r.raise_for_status()
         feed = feedparser.parse(r.text)
