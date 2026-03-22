@@ -4,10 +4,10 @@
   "description": "Probabilistic multi-agent asset prediction platform",
   "private": true,
   "scripts": {
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "yarn && cd backend && yarn && cd ../frontend && yarn",
+    "dev": "concurrently \"yarn run dev:backend\" \"yarn run dev:frontend\"",
+    "dev:backend": "cd backend && yarn dev",
+    "dev:frontend": "cd frontend && yarn dev",
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start",
     "setup": "node scripts/setup.js"
