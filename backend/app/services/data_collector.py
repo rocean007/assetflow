@@ -45,10 +45,14 @@ def safe_get(url: str, params: dict = None, timeout: int = 10) -> Optional[dict]
     except Exception:
         return None
 
-
 def safe_feed(url: str, source: str, max_items: int = 6) -> list:
     try:
-        feed = feedparser.parse(url)
+        feed = feedparser.parse(url, request_headers={'Connection': 'close'}, 
+                                agent='AssetFlow/2.0', handlers=[])
+        # feedparser doesn't support timeout natively — fetch manually instead
+        r = SESSION.get(url, timeout=8)
+        r.raise_for_status()
+        feed = feedparser.parse(r.text)
         items = []
         for e in feed.entries[:max_items]:
             items.append({
@@ -61,7 +65,6 @@ def safe_feed(url: str, source: str, max_items: int = 6) -> list:
         return items
     except Exception:
         return []
-
 
 def run_parallel(tasks: list, max_workers: int = 20) -> list:
     """Run list of (fn, *args) tuples in parallel, return results (None on error)."""

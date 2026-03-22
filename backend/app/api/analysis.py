@@ -1,7 +1,4 @@
-"""
-Analysis API — run analysis jobs, query task status, retrieve results.
-Matches MiroFish's build_graph pattern: async task with progress broadcast.
-"""
+
 import threading
 import traceback
 from flask import request, jsonify, current_app
