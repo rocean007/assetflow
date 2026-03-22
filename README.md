@@ -45,7 +45,7 @@ Every agent reasons about butterfly effects — e.g. a drought in wheat-producin
 
 ```bash
 # 1. Clone or download
-git clone https://github.com/your-username/assetflow
+git clone https://github.com/rocean007/assetflow
 cd assetflow
 
 # 2. Run setup
