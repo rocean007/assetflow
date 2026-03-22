@@ -2,29 +2,40 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { agentsApi } from '../utils/api';
 
+// Providers grouped: free-first so users see them at top
 const PROVIDERS = [
-  { v: 'openai', l: 'OpenAI', models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'o1-mini'] },
-  { v: 'anthropic', l: 'Anthropic', models: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022', 'claude-opus-4-6'] },
-  { v: 'google', l: 'Google Gemini', models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'] },
-  { v: 'groq', l: 'Groq (free tier)', models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'] },
-  { v: 'openrouter', l: 'OpenRouter', models: ['meta-llama/llama-3.1-8b-instruct:free', 'google/gemini-flash-1.5', 'mistralai/mistral-7b-instruct:free', 'nousresearch/hermes-3-llama-3.1-405b:free'] },
-  { v: 'ollama', l: 'Ollama (local, free)', models: ['llama3.2', 'llama3.1', 'mistral', 'phi3', 'qwen2.5', 'deepseek-r1'] },
+  // ── Truly free, zero signup, zero key ──────────────────────────────────────
+  { v: 'pollinations',    l: 'Pollinations.ai ★ FREE no key',  free: true,  noKey: true,  models: ['mistral', 'llama', 'openai', 'phi', 'command-r'], note: 'Completely free. No account. No key. Rate-limited but works.' },
+  { v: 'huggingface_free',l: 'HuggingFace ★ FREE no key',      free: true,  noKey: true,  models: ['HuggingFaceH4/zephyr-7b-beta', 'mistralai/Mistral-7B-Instruct-v0.2', 'microsoft/Phi-3-mini-4k-instruct'], note: 'Free public inference. No account needed. May be slow when busy.' },
+  { v: 'together_free',   l: 'Together.ai ★ FREE no key',      free: true,  noKey: true,  models: ['Qwen/Qwen2.5-7B-Instruct-Turbo', 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo'], note: 'Free tier models. No key required.' },
+  // ── Free with signup (generous free tiers) ─────────────────────────────────
+  { v: 'groq',            l: 'Groq — free signup',             free: true,  noKey: false, models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'], note: 'Free tier. Get key at console.groq.com — takes 1 minute.' },
+  { v: 'google',          l: 'Google Gemini — free tier',      free: true,  noKey: false, models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'], note: 'Free tier available. Get key at aistudio.google.com.' },
+  { v: 'openrouter',      l: 'OpenRouter — free models',       free: true,  noKey: false, models: ['meta-llama/llama-3.1-8b-instruct:free', 'google/gemini-flash-1.5', 'mistralai/mistral-7b-instruct:free', 'nousresearch/hermes-3-llama-3.1-405b:free'], note: 'Many free models. Get key at openrouter.ai.' },
+  { v: 'cohere',          l: 'Cohere — free trial',            free: true,  noKey: false, models: ['command-r-plus-08-2024', 'command-r-08-2024', 'command-light'], note: 'Free trial key at cohere.com. Generous limits.' },
+  { v: 'mistral',         l: 'Mistral AI — free tier',         free: true,  noKey: false, models: ['mistral-small-latest', 'mistral-medium-latest', 'open-mistral-7b'], note: 'Free tier. Get key at console.mistral.ai.' },
+  { v: 'huggingface',     l: 'HuggingFace — with key',         free: true,  noKey: false, models: ['mistralai/Mistral-7B-Instruct-v0.3', 'meta-llama/Meta-Llama-3-8B-Instruct', 'HuggingFaceH4/zephyr-7b-beta'], note: 'Free API key at huggingface.co. Higher rate limits than keyless.' },
+  { v: 'ollama',          l: 'Ollama — local (free)',          free: true,  noKey: true,  models: ['llama3.2', 'llama3.1', 'mistral', 'phi3', 'qwen2.5', 'deepseek-r1', 'gemma2'], note: 'Runs on your machine. Install at ollama.com. Fully private.' },
+  // ── Paid providers ─────────────────────────────────────────────────────────
+  { v: 'openai',          l: 'OpenAI',                         free: false, noKey: false, models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'o1-mini'], note: 'Paid. Best quality. Key at platform.openai.com.' },
+  { v: 'anthropic',       l: 'Anthropic',                      free: false, noKey: false, models: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022', 'claude-opus-4-6'], note: 'Paid. Excellent reasoning. Key at console.anthropic.com.' },
+  { v: 'deepseek',        l: 'DeepSeek (near-free)',           free: true,  noKey: false, models: ['deepseek-chat', 'deepseek-reasoner'], note: 'Extremely cheap ($0.00014/1K tokens). Key at platform.deepseek.com.' },
 ];
 
 const ROLES = [
-  { v: 'specialist', l: 'Specialist', desc: 'Auto-assigned role from: Macro, Sentiment, Social, Supply Chain, Technical, Geopolitical, Sector' },
-  { v: 'macro', l: 'Macro Economist', desc: 'Focuses on interest rates, inflation, GDP, central banks, currency' },
-  { v: 'sentiment', l: 'Sentiment Analyst', desc: 'News narratives, fear/greed, social media signals, options flow' },
-  { v: 'social_sentiment', l: 'Social Intelligence', desc: 'Deep social media analysis — Reddit/X/StockTwits/HN, manipulation detection' },
-  { v: 'supply_chain', l: 'Supply Chain', desc: 'Commodities, weather impact, shipping, agricultural reports, butterfly chains' },
-  { v: 'technical', l: 'Technical Analyst', desc: 'Price action, momentum, support/resistance, volume, options positioning' },
-  { v: 'geopolitical', l: 'Geopolitical Risk', desc: 'Conflicts, sanctions, trade policy, regulatory actions, diplomatic shifts' },
-  { v: 'sector', l: 'Sector Specialist', desc: 'Earnings, analyst ratings, insider trades, competitive dynamics, M&A' },
-  { v: 'synthesizer', l: 'Synthesizer', desc: 'Phase 2: reads the complete graph and produces probability verdict' },
-  { v: 'super_synthesizer', l: 'Super Synthesizer', desc: 'Phase 3: reconciles multiple synthesizer verdicts into final prediction' },
+  { v: 'specialist',       l: 'Specialist',        desc: 'Auto-assigned round-robin to all 7 roles below' },
+  { v: 'macro',            l: 'Macro Economist',   desc: 'Interest rates, inflation, GDP, central banks, currencies' },
+  { v: 'sentiment',        l: 'Sentiment Analyst', desc: 'News narratives, fear/greed, options flow, insider activity' },
+  { v: 'social_sentiment', l: 'Social Intelligence',desc: 'Reddit/X/StockTwits/HN — manipulation detection and crowd signals' },
+  { v: 'supply_chain',     l: 'Supply Chain',      desc: 'Weather, commodities, shipping, agriculture — butterfly chains' },
+  { v: 'technical',        l: 'Technical Analyst', desc: 'Price action, momentum, support/resistance, volume, RSI' },
+  { v: 'geopolitical',     l: 'Geopolitical Risk', desc: 'Conflicts, sanctions, trade policy, regulatory, diplomacy' },
+  { v: 'sector',           l: 'Sector Specialist', desc: 'Earnings, analysts, insiders, competitive dynamics, M&A' },
+  { v: 'synthesizer',      l: 'Synthesizer',       desc: 'Phase 2: reads the complete assembled graph → produces verdict' },
+  { v: 'super_synthesizer',l: 'Super Synthesizer', desc: 'Phase 3: reconciles multiple synthesizer verdicts into final call' },
 ];
 
-const EMPTY = { name: '', provider: 'openai', apiKey: '', model: '', baseUrl: '', role: 'specialist', description: '' };
+const EMPTY = { name: '', provider: 'pollinations', apiKey: '', model: '', baseUrl: '', role: 'specialist', description: '' };
 
 const inp = { width: '100%', background: '#080a0f', border: '1px solid #1c2333', borderRadius: 6, padding: '7px 11px', color: '#e2e8f0', fontFamily: '"JetBrains Mono", monospace', fontSize: 13, outline: 'none' };
 
@@ -135,8 +146,17 @@ export default function Agents() {
               </select>
             </F>
           </div>
+          {prov?.note && (
+            <div className="rounded px-3 py-2 mono text-xs" style={{ background: prov.noKey ? 'rgba(0,230,118,0.06)' : 'rgba(0,200,255,0.06)', border: `1px solid ${prov.noKey ? 'rgba(0,230,118,0.2)' : 'rgba(0,200,255,0.15)'}`, color: prov.noKey ? '#00e676' : '#00c8ff' }}>
+              {prov.noKey ? '\u2605 No API key needed — ' : '\u2691 Free tier — '}{prov.note}
+            </div>
+          )}
           {form.provider === 'ollama' ? (
             <F label="Ollama Base URL"><input value={form.baseUrl} onChange={e => setForm(f => ({ ...f, baseUrl: e.target.value }))} style={inp} placeholder="http://localhost:11434" /></F>
+          ) : prov?.noKey ? (
+            <div className="rounded px-3 py-2 mono text-xs" style={{ color: '#4a5568', background: '#0a0c11', border: '1px solid #1c2333' }}>
+              No API key required for this provider.
+            </div>
           ) : (
             <F label="API Key"><input type="password" value={form.apiKey} onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))} style={inp} placeholder={editId ? 'Leave blank to keep existing key' : 'Your API key...'} /></F>
           )}
@@ -177,7 +197,9 @@ export default function Agents() {
                     border: `1px solid ${agent.role === 'super_synthesizer' ? 'rgba(244,114,182,0.25)' : agent.role === 'synthesizer' ? 'rgba(167,139,250,0.25)' : 'rgba(96,165,250,0.25)'}`,
                     background: 'transparent'
                   }}>{agent.role}</span>
-                  {agent.hasApiKey && <span className="mono text-xs" style={{ color: '#00e676' }}>● key</span>}
+                  {agent.builtin && <span className="mono text-xs px-1.5 py-0.5 rounded" style={{ color: '#00e676', background: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.2)' }}>★ free built-in</span>}
+                  {!agent.builtin && agent.hasApiKey && <span className="mono text-xs" style={{ color: '#00e676' }}>● key</span>}
+                  {!agent.builtin && !agent.hasApiKey && PROVIDERS.find(p => p.v === agent.provider)?.noKey && <span className="mono text-xs" style={{ color: '#00e676' }}>★ no key</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {testR && <span className="mono text-xs" style={{ color: testR.ok ? '#00e676' : '#ff3d5a' }}>{testR.ok ? '✓ ok' : '✗ fail'}</span>}
