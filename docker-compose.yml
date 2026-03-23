@@ -1,21 +1,13 @@
 version: '3.8'
 services:
   backend:
-    build:
-      context: backend
-      dockerfile: Dockerfile
+    build: { context: backend, dockerfile: Dockerfile }
     ports: ['5001:5001']
-    volumes: ['./data:/app/data']
-    environment:
-      PORT: 5001
-      FLASK_ENV: production
-      FRONTEND_URL: http://localhost:5173
+    volumes: ['./data:/app/../data']
+    environment: { PORT: 5001, FLASK_ENV: production }
     restart: unless-stopped
-
   frontend:
-    build:
-      context: frontend
-      dockerfile: Dockerfile
+    build: { context: frontend, dockerfile: Dockerfile }
     ports: ['5173:80']
     depends_on: [backend]
     restart: unless-stopped

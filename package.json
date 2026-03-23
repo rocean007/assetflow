@@ -1,10 +1,1 @@
-{
-  "name": "assetflow",
-  "version": "2.0.0",
-  "private": true,
-  "scripts": {
-    "setup":    "python3 scripts/setup.py",
-    "frontend": "cd frontend && yarn dev",
-    "install:frontend": "cd frontend && yarn install"
-  }
-}
+{ "name":"assetflow","private":true,"scripts":{"setup":"python3 scripts/setup.py","frontend":"cd frontend && yarn dev","install:frontend":"cd frontend && yarn install"} }

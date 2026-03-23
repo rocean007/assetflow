@@ -1,96 +1,52 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { analysisApi } from '../utils/api';
+import { simulationApi } from '../utils/api';
+import { CardPad, DirColor } from '../components/UI';
 
 export default function History() {
-  const { history, setHistory, setCurrentAnalysis } = useStore();
+  const { history, setHistory } = useStore();
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    analysisApi.history(100)
-      .then(r => { setHistory(r.data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    simulationApi.history(100).then(r=>{setHistory(r.data||[]);setLoading(false);}).catch(()=>setLoading(false));
   }, []);
-
-  async function open(id) {
-    try {
-      const res = await analysisApi.get(id);
-      if (res.success) setCurrentAnalysis(res.data);
-    } catch (_) {}
-  }
-
-  if (loading) return (
-    <div className="mono text-sm p-8" style={{ color: '#4a5568' }}>Loading…</div>
-  );
-
+  if (loading) return <div className="mono" style={{ color:'#374151',padding:32,fontSize:12 }}>Loading...</div>;
   return (
-    <div className="max-w-5xl mx-auto space-y-5 anim-up">
+    <div className="slide" style={{ display:'flex',flexDirection:'column',gap:20 }}>
       <div>
-        <h1 className="mono font-semibold text-2xl" style={{ color: '#e2e8f0' }}>History</h1>
-        <p className="text-sm mt-1" style={{ color: '#4a5568' }}>
-          {history.length} past analyses stored locally
-        </p>
+        <h1 className="mono" style={{ fontSize:22,fontWeight:600,color:'#e2e8f0' }}>History</h1>
+        <p style={{ fontSize:13,color:'#374151',marginTop:4 }}>{history.length} past analyses</p>
       </div>
-
-      {!history.length ? (
-        <div className="rounded-lg p-12 text-center mono text-sm"
-          style={{ background: '#0f1218', border: '1px solid #1c2333', color: '#4a5568' }}>
-          No analyses yet. Run your first from the Analyze tab.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {history.map(a => {
-            const syn = a.synthesis || {};
-            const dir = syn.primaryDirection ?? syn.primary_direction ?? 'sideways';
-            const up  = syn.upProbability   ?? syn.up_probability   ?? 0;
-            const dn  = syn.downProbability ?? syn.down_probability ?? 0;
-            const conf= syn.confidence ?? 0;
-            const dirColor = dir === 'up' ? '#00e676' : dir === 'down' ? '#ff3d5a' : '#ffd740';
-            const stats = a.stats || {};
-
+      {!history.length?(
+        <CardPad style={{ textAlign:'center',padding:48 }}>
+          <div className="mono" style={{ color:'#374151',fontSize:12 }}>No history yet. Run your first analysis.</div>
+        </CardPad>
+      ):(
+        <div style={{ display:'flex',flexDirection:'column',gap:6 }}>
+          {history.map((h,i)=>{
+            const dir = h.direction; const col = DirColor(dir);
             return (
-              <div key={a.id} onClick={() => open(a.id)}
-                className="rounded-lg p-4 cursor-pointer transition-all"
-                style={{ background: '#0f1218', border: '1px solid #1c2333' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,200,255,0.3)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#1c2333'}>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="mono font-semibold w-16" style={{ color: '#e2e8f0' }}>
-                      {a.asset?.symbol}
+              <CardPad key={i} style={{ padding:14 }}>
+                <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between' }}>
+                  <div style={{ display:'flex',alignItems:'center',gap:12 }}>
+                    <span className="mono" style={{ fontSize:14,fontWeight:600,color:'#e2e8f0',minWidth:48 }}>
+                      {h.symbol||h.asset?.symbol}
                     </span>
-                    <span className="mono text-xs px-2 py-0.5 rounded"
-                      style={{ color: dirColor, border: `1px solid ${dirColor}40` }}>
-                      {dir.toUpperCase()}
+                    <span className="mono" style={{ fontSize:11,padding:'2px 8px',borderRadius:4,
+                      color:col,border:`1px solid ${col}40`,background:col+'10' }}>
+                      {(dir||'?').toUpperCase()}
                     </span>
-                    <span className="mono text-xs" style={{ color: '#00e676' }}>↑{up}%</span>
-                    <span className="mono text-xs" style={{ color: '#ff3d5a' }}>↓{dn}%</span>
-                    {a.price?.price && (
-                      <span className="mono text-xs" style={{ color: '#4a5568' }}>
-                        ${a.price.price.toFixed(2)}
-                      </span>
-                    )}
-                    <span className="mono text-xs" style={{ color: '#4a5568' }}>
-                      {stats.phase1_agents ?? stats.phase1Agents ?? '?'} agents
-                    </span>
+                    <span className="mono" style={{ fontSize:11,color:'#10b981' }}>↑{h.up||h.up_probability}%</span>
+                    <span className="mono" style={{ fontSize:11,color:'#f43f5e' }}>↓{h.down||h.down_probability}%</span>
+                    <span className="mono" style={{ fontSize:10,color:'#374151' }}>conf {h.confidence}%</span>
                   </div>
-                  <div className="flex items-center gap-4 mono text-xs" style={{ color: '#4a5568' }}>
-                    <span>conf {conf}%</span>
-                    <span>{new Date(a.created_at || a.createdAt).toLocaleString()}</span>
-                    <span style={{ color: '#00c8ff' }}>›</span>
-                  </div>
+                  <span className="mono" style={{ fontSize:10,color:'#374151' }}>
+                    {new Date(h.created_at||h.createdAt||Date.now()).toLocaleString()}
+                  </span>
                 </div>
-
-                {syn.summary && (
-                  <p className="text-xs mt-2 leading-relaxed"
-                    style={{ color: '#4a5568',
-                             display: '-webkit-box', WebkitLineClamp: 2,
-                             WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {syn.summary}
-                  </p>
-                )}
-              </div>
+                {h.excerpt&&<p style={{ fontSize:11,color:'#374151',marginTop:8,lineHeight:1.5,
+                  overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical' }}>
+                  {h.excerpt}</p>}
+              </CardPad>
             );
           })}
         </div>

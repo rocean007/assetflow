@@ -1,35 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 :root { color-scheme: dark; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: #080a0f;
-  color: #e2e8f0;
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
+body { background: #060912; color: #e2e8f0; font-family: 'IBM Plex Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #0f1218; }
-::-webkit-scrollbar-thumb { background: #1c2333; border-radius: 2px; }
-
+::-webkit-scrollbar-track { background: #0d1117; }
+::-webkit-scrollbar-thumb { background: #1e2433; border-radius: 2px; }
 .mono { font-family: 'JetBrains Mono', monospace; }
-
-/* ReactFlow */
-.react-flow__background { background: #080a0f !important; }
-.react-flow__controls button {
-  background: #0f1218 !important;
-  border-color: #1c2333 !important;
-  color: #e2e8f0 !important;
-}
-
-@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-.anim-fade { animation: fadeIn 0.25s ease-out; }
-.anim-up   { animation: slideUp 0.3s ease-out; }
-.dot-pulse { animation: pulseDot 2s ease-in-out infinite; }
+.react-flow__background { background: #060912 !important; }
+.react-flow__controls button { background: #0d1117 !important; border-color: #1e2433 !important; color: #94a3b8 !important; }
+@keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+@keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulse2  { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+@keyframes scan    { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
+.fade    { animation: fadeIn  .2s ease-out; }
+.slide   { animation: slideUp .3s ease-out; }
+.blink   { animation: pulse2  2s ease-in-out infinite; }
+.scanline::after { content:''; position:absolute; inset:0; background: linear-gradient(transparent 49%, rgba(0,220,255,.015) 50%, transparent 51%); pointer-events:none; }
+input, select, textarea { background:#0d1117; border:1px solid #1e2433; border-radius:5px; color:#e2e8f0; font-family:'JetBrains Mono',monospace; font-size:13px; padding:7px 11px; outline:none; transition:border-color .15s; width:100%; }
+input:focus, select:focus, textarea:focus { border-color:#0ea5e9; }
+button { cursor:pointer; font-family:'JetBrains Mono',monospace; transition:all .15s; }

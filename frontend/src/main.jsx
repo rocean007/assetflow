@@ -4,8 +4,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import Layout    from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import Projects  from './pages/Projects';
 import Agents    from './pages/Agents';
-import Analysis  from './pages/Analysis';
+import Analyze   from './pages/Analyze';
+import Simulation from './pages/Simulation';
 import History   from './pages/History';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -13,9 +15,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index          element={<Dashboard />} />
+          <Route index           element={<Dashboard />} />
+          <Route path="projects" element={<Projects />} />
           <Route path="agents"   element={<Agents />} />
-          <Route path="analysis" element={<Analysis />} />
+          <Route path="analyze"  element={<Analyze />} />
+          <Route path="simulate" element={<Simulation />} />
           <Route path="history"  element={<History />} />
         </Route>
       </Routes>
