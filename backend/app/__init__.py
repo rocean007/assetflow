@@ -12,7 +12,7 @@ def create_app(config=None):
     app.config.from_object(cfg)
     app.config['AF_CONFIG'] = cfg
     CORS(app, origins=[cfg.FRONTEND_URL,'http://localhost:5173','http://localhost:3000'])
-    socketio.init_app(app, cors_allowed_origins='*', async_mode='gevent', logger=False, engineio_logger=False)
+    socketio.init_app(app, cors_allowed_origins='*', async_mode='threading', logger=False, engineio_logger=False)
     from .api.agents    import agents_bp
     from .api.projects  import projects_bp
     from .api.graph     import graph_bp
