@@ -1,404 +1,336 @@
 # AssetFlow
 
-**Probabilistic multi-agent asset intelligence.**
+**Probabilistic multi-agent asset intelligence with a single unified flow.**
 
-Upload research files, enter a ticker, and a swarm of AI agents independently analyzes 25+ real-time data sources — price history, options flow, insider trades, analyst ratings, earnings, central bank feeds, weather across 12 agricultural regions, 30 commodities, shipping indices, social media from Reddit/StockTwits/X, geopolitical alerts, regulatory news, labor data, ESG signals, and more. Each agent writes its findings into a shared intelligence graph. A synthesizer reads the complete graph and produces a probability verdict. You can then interview any individual agent to interrogate their reasoning.
+Enter a ticker. Optionally upload research files (PDF, DOCX, TXT, CSV…). Hit Run.
+Agents immediately begin analyzing 25+ real-time data categories in parallel — price history,
+options flow, insider trades, analyst ratings, earnings calendar, 15 financial news feeds,
+12 central bank feeds, weather across 8 agricultural and energy regions, 18 commodity prices,
+shipping indices, geopolitical alerts, regulatory actions, and social media from Reddit and
+StockTwits. A **fast prediction** is shown within minutes. Meanwhile, enriched deep research
+runs in the background, agents re-analyze with the fuller context, and a **final refined
+verdict** replaces the fast one. You can then interview any individual agent to interrogate
+their reasoning.
 
-**Comes with 8 built-in free agents. No API key needed to run.**
+No WebSocket issues. No separate "build graph" and "simulate" steps. One flow.
 
 ---
 
 ## Requirements
 
-- Python 3.10 or later — [python.org](https://python.org)
-- Node.js 18 or later — [nodejs.org](https://nodejs.org)
-- Yarn — `npm install -g yarn`
+- **Python 3.10+** — [python.org](https://python.org)
+- **Node.js 18+** — [nodejs.org](https://nodejs.org)  
+- **Yarn** — `npm install -g yarn`
+- **An LLM API key** — Groq is free and takes 2 minutes: [console.groq.com](https://console.groq.com)
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. One-time setup
+# 1. Setup (one time)
 python3 scripts/setup.py
 
-# 2. Start the backend (Terminal 1)
+# 2. Backend (Terminal 1)
 cd backend
 pip install -r requirements.txt
 python run.py
-# Runs on http://localhost:5001
+# → http://localhost:5001
 
-# 3. Start the frontend (Terminal 2)
+# 3. Frontend (Terminal 2)
 cd frontend
 yarn install
 yarn dev
-# Opens http://localhost:5173
+# → http://localhost:5173
 ```
 
-Open **http://localhost:5173** in your browser. The 8 built-in free agents are pre-configured and ready to use immediately.
+Open **http://localhost:5173**
+
+**First step**: Go to **Agents** → Add Agent → pick Groq, paste your free key.
 
 ---
 
-## How It Works
-
-### The Three-Phase Pipeline
+## The Flow
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  PHASE 0 — Data Fetch (parallel, ~10–20 seconds)        │
-│                                                          │
-│  Price + OHLCV · Options chain · Analyst ratings        │
-│  Earnings calendar · Insider transactions · Short int   │
-│  20 news RSS feeds · 12 central bank feeds              │
-│  Weather: 12 agricultural/energy regions (Open-Meteo)   │
-│  30 commodities · Shipping (Baltic Dry + 3 feeds)       │
-│  Social: Reddit × 10 subs, StockTwits, X/Nitter         │
-│  Geopolitical · Regulatory · ESG · Labor · Healthcare   │
-│  + Any files you uploaded to the project                 │
-└────────────────────┬────────────────────────────────────┘
+POST /api/sessions/  (create + start immediately)
+         │
+         ▼
+  ┌──────────────────────────────────────────────┐
+  │  PHASE 0 — Data Fetch  (~10-20 seconds)      │
+  │  All 25+ sources fetched in parallel         │
+  │  price · options · news · weather · social   │
+  │  commodities · macro · geo · regulatory      │
+  └──────────────────┬───────────────────────────┘
                      │
-┌────────────────────▼────────────────────────────────────┐
-│  PHASE 1 — Specialist Agents (all run concurrently)      │
-│                                                          │
-│  Each agent receives the full world-state context        │
-│  Each agent independently writes to a SharedGraph        │
-│  No agent sees another's output                          │
-│                                                          │
-│  Roles: Macro · Sentiment · Supply Chain · Technical    │
-│         Geopolitical · Sector · Social Intelligence     │
-└────────────────────┬────────────────────────────────────┘
-                     │  (complete graph: nodes + edges + signals)
-┌────────────────────▼────────────────────────────────────┐
-│  PHASE 2 — Synthesizer reads the complete graph          │
-│                                                          │
-│  Sees ALL agent findings assembled into one graph        │
-│  Produces: upProbability / downProbability / neutral     │
-│  Bull case · Bear case · Butterfly chains · Risks        │
-└────────────────────┬────────────────────────────────────┘
-                     │  (optional)
-┌────────────────────▼────────────────────────────────────┐
-│  PHASE 3 — Super Synthesizer reconciles verdicts         │
-│  (only if you configure a super_synthesizer agent)       │
-└─────────────────────────────────────────────────────────┘
+  ┌──────────────────▼───────────────────────────┐
+  │  PHASE 1 — Specialist Agents (concurrent)    │
+  │  Each writes to shared IntelGraph            │
+  │  Agents trace butterfly effect chains        │
+  └──────────────────┬───────────────────────────┘
+                     │
+  ┌──────────────────▼───────────────────────────┐
+  │  PHASE 1 SYNTHESIS                           │
+  │  Synthesizer reads complete graph            │
+  │  → FAST PREDICTION shown to user ←          │
+  └──────────────────┬───────────────────────────┘
+                     │  background continues
+  ┌──────────────────▼───────────────────────────┐
+  │  PHASE 2 — Deep Research                     │
+  │  Research question + files + extra context   │
+  │  Agents re-run with enriched data            │
+  └──────────────────┬───────────────────────────┘
+                     │
+  ┌──────────────────▼───────────────────────────┐
+  │  PHASE 2 SYNTHESIS                           │
+  │  → FINAL VERDICT replaces fast one ←        │
+  └──────────────────────────────────────────────┘
 ```
 
-### Butterfly Effect Model
+Real-time progress is streamed via **Server-Sent Events** (no WebSocket, works everywhere):
+```
+GET /api/sessions/<id>/stream   → text/event-stream
+```
 
-Every agent is explicitly instructed to trace indirect causal chains across data categories. Simple example:
+---
+
+## What Makes This Different
+
+### Butterfly Effect Reasoning
+
+Every specialist agent is instructed to trace **indirect causal chains** across data
+categories. The more indirect, the better. Example:
 
 ```
 Weather alert: DROUGHT in US Midwest corn belt
-  → corn supply expected to drop next harvest
-  → feed grain shortage → livestock feed costs rise
-  → protein prices rise → food inflation increases
+  → corn supply expected to drop
+  → feed grain shortage → livestock costs rise
+  → protein prices rise → food inflation ticks up
   → consumer discretionary spending compresses
-  → retail sector margin pressure
-  → bearish signal for consumer/retail-exposed assets
+  → retail sector margins under pressure
+  → bearish signal for consumer-exposed equities
 ```
 
-These chains are written as structured edge claims into the shared graph. The synthesizer reads the complete causal network, not just raw signal votes.
+These chains are written as **structured edge claims** into the shared IntelGraph.
+The synthesizer reads the complete causal network, not just raw vote tallies.
 
-### Relevance Engine
+### Data Relevance by Asset Type
 
-Different assets weight different data differently. The relevance engine automatically tells agents which data categories matter most:
+The system understands which data matters for which asset:
 
-| Asset Type | High-Priority Data |
-|------------|-------------------|
-| Energy stocks | Oil/gas prices, weather near oil infrastructure, shipping BDI |
+| Asset | High-Priority Data |
+|-------|--------------------|
+| Energy stocks | Oil/gas prices, weather near oil infrastructure, EIA reports |
 | Tech equities | Regulatory (FTC/SEC), labor market, social sentiment |
-| Agricultural commodities | Weather across 12 regions, USDA/FAO feeds, shipping |
-| Crypto | Social sentiment, macro (rate decisions), regulatory |
-| Forex | Central banks, macro, geopolitical |
-| Healthcare | FDA actions, STAT News, clinical trial news |
+| Agricultural commodities | Weather across 8 regions, USDA/FAO, shipping BDI |
+| Crypto | Social sentiment, macro rate decisions, regulatory |
+| Forex | Central banks, macro, geopolitical events |
 
-### Data Relevance Scoring
+### Social Manipulation Detection
 
-Data categories are not treated equally. The system understands, for example, that:
-- A record oil production day → likely reduces oil prices → matters for energy stocks, transportation, inflation; does **not** materially affect gold
-- Heavy rainfall in Brazil → affects coffee and soy supply → matters for food companies and commodity ETFs; doesn't affect a US bank stock
-- A Fed rate signal → affects everything through cost of capital
+Every social media post receives a **manipulation score (0–100)**:
+- 0–30: Genuine organic signal
+- 30–60: Biased but informative  
+- 60+: Likely coordinated pump/dump attempt
 
-Agents receive a relevance guidance block tailored to the specific asset before seeing any data.
+If >40% of posts are flagged AND all point the same direction → likely pump → agents are
+instructed to **fade** the signal direction. A detected pump attempt is itself a signal.
 
----
+### Research Files
 
-## The Application
+Upload supplementary files to any analysis session:
+- **PDF**: Annual reports, earnings transcripts, research papers
+- **DOCX**: Analyst notes, internal research
+- **TXT/MD**: Custom context, news summaries
+- **CSV**: Historical data, custom datasets
+- **JSON**: Structured data exports
 
-### Pages
-
-**Dashboard** — Overview of latest analysis results, intelligence graph visualization, and quick stats.
-
-**Projects** — The main workspace. Create a project for each asset you want to analyze.
-- Upload supplementary research files (PDF, DOCX, TXT, MD, CSV, JSON) — agents incorporate this data
-- Trigger graph builds from here
-- See build progress in real time
-
-**Agents** — Configure your LLM agents. 8 free agents are pre-installed.
-
-**Analyze** — Run analysis from a project or enter a quick symbol. See full results including:
-- Probability gauge (up/down/sideways with confidence)
-- Bull case and bear case
-- Butterfly effect chains
-- Phase 1 intelligence graph (interactive)
-- Individual agent outputs with reasoning
-
-**Simulate** — Post-analysis agent interrogation.
-- Extract agent profiles from a completed analysis
-- Interview any individual agent with a custom question
-- Ask all agents the same question simultaneously
-- Browse full interview history
-
-**History** — Browse all past analyses with direction, probabilities, and confidence.
+Text is extracted and injected into every agent's context as high-priority information.
 
 ---
 
-## Projects and File Uploads
+## LLM Providers
 
-A **Project** ties together a ticker symbol, asset type, optional Alpha Vantage key, a research question, uploaded files, and all analysis results.
+All providers use the OpenAI-compatible chat API format. Confirmed working in 2025/2026:
 
-### Creating a Project
+| Provider | Cost | Quality | Get Key |
+|----------|------|---------|---------|
+| **Groq** | FREE signup | ⭐⭐⭐⭐ | [console.groq.com](https://console.groq.com) |
+| **OpenRouter** | FREE (no CC) | ⭐⭐⭐ | [openrouter.ai](https://openrouter.ai) |
+| **Google Gemini** | FREE tier | ⭐⭐⭐⭐ | [aistudio.google.com](https://aistudio.google.com) |
+| **Mistral** | FREE tier | ⭐⭐⭐ | [console.mistral.ai](https://console.mistral.ai) |
+| **Together AI** | $25 free credits | ⭐⭐⭐⭐ | [platform.together.ai](https://platform.together.ai) |
+| **Cerebras** | FREE fast tier | ⭐⭐⭐ | [inference.cerebras.ai](https://inference.cerebras.ai) |
+| **DeepSeek** | ~$0 ($0.00014/1K) | ⭐⭐⭐⭐ | [platform.deepseek.com](https://platform.deepseek.com) |
+| **OpenAI** | Paid | ⭐⭐⭐⭐⭐ | [platform.openai.com](https://platform.openai.com) |
+| **Anthropic** | Paid | ⭐⭐⭐⭐⭐ | [console.anthropic.com](https://console.anthropic.com) |
+| **Ollama** | FREE (local) | ⭐⭐⭐⭐ | [ollama.com](https://ollama.com) |
 
-Go to **Projects → New Project** and fill in:
+### Recommended Setup (Free, High Quality)
 
-| Field | Description |
-|-------|-------------|
-| Symbol | Ticker symbol (AAPL, BTC-USD, CL=F, etc.) |
-| Name | Display name for the project |
-| Asset Type | equity, crypto, forex, commodity, index, etf, bond, reit |
-| Research Question | Optional extra context: "How might rising oil prices affect this stock?" |
-| Alpha Vantage Key | Optional — provides better OHLCV price history |
-
-### Uploading Research Files
-
-Click **+ Upload** on any project card. Supported formats:
-
-| Format | Use Case |
-|--------|----------|
-| PDF | Annual reports, earnings transcripts, research papers |
-| DOCX | Analyst notes, internal research |
-| TXT / MD | Custom context, news summaries, notes |
-| CSV | Historical data, custom datasets |
-| JSON | Structured data exports |
-
-The file text is extracted and injected into every agent's context with a note that the analyst uploaded this material for weighting. Agents are instructed to treat uploaded research as a high-priority signal.
-
-### Pipeline
-
-Once a project has files and agents are configured, click **Build Graph** to run the full analysis pipeline.
-
----
-
-## Agents
-
-### Built-In Free Agents (zero configuration)
-
-These are pre-installed and work immediately — no API key, no signup:
-
-| Agent | Provider | Role |
-|-------|----------|------|
-| Macro Agent | Pollinations.ai (Mistral-7B) | `macro` |
-| Sentiment Agent | Pollinations.ai (Mistral-7B) | `sentiment` |
-| Supply Chain Agent | Pollinations.ai (Mistral-7B) | `supply_chain` |
-| Technical Agent | Pollinations.ai (Mistral-7B) | `technical` |
-| Geopolitical Agent | Pollinations.ai (Mistral-7B) | `geopolitical` |
-| Sector Agent | Pollinations.ai (Mistral-7B) | `sector` |
-| Social Agent | Pollinations.ai (Mistral-7B) | `social_sentiment` |
-| Synthesizer | HuggingFace (Zephyr-7B-beta) | `synthesizer` |
-
-These use 7B parameter models. They reliably produce signal outputs but their reasoning depth is limited. For significantly better analysis quality, add a Groq or Gemini agent (both free).
-
-### Agent Roles
-
-**Phase 1 — Specialists** (write to graph independently):
-
-| Role | Analyzes |
-|------|---------|
-| `specialist` | Auto-assigned round-robin to all 7 roles below |
-| `macro` | Interest rates, inflation, GDP, central bank guidance, yield curves, currency flows |
-| `sentiment` | News narratives, fear/greed, options P/C ratio, insider trades, short interest |
-| `social_sentiment` | Reddit (10 subs), StockTwits (native sentiment), X — manipulation detection |
-| `supply_chain` | Weather (12 regions), 30 commodities, Baltic Dry Index, shipping news, agriculture |
-| `technical` | OHLCV price action, estimated RSI, momentum, volume, support/resistance levels |
-| `geopolitical` | Conflicts, sanctions, trade policy, SEC/FDA/FTC regulatory actions |
-| `sector` | Earnings calendar, EPS estimates, analyst ratings/targets, insider activity, M&A |
-
-**Phase 2 — Synthesizer**: Reads the complete assembled intelligence graph → produces final probability verdict with full analysis.
-
-**Phase 3 — Super Synthesizer** (optional): If you configure multiple synthesizers, this role reconciles their verdicts into one definitive prediction.
-
-### Adding Better Agents
-
-Go to **Agents → Add Agent**.
-
-| Provider | Cost | Quality | Notes |
-|----------|------|---------|-------|
-| **Pollinations.ai** | Free, no key | Moderate | Default built-in. Works instantly. |
-| **HuggingFace Free** | Free, no key | Moderate | Zephyr-7B, Mistral-7B |
-| **Together.ai Free** | Free, no key | Moderate | Qwen 2.5 |
-| **Groq** | Free (signup) | **High** | Best free quality. [console.groq.com](https://console.groq.com) — 1 min setup |
-| **Google Gemini** | Free tier | **High** | [aistudio.google.com](https://aistudio.google.com) |
-| **OpenRouter** | Free models | Varies | Many free models at [openrouter.ai](https://openrouter.ai) |
-| **Ollama** | Free (local) | High | Full privacy. [ollama.com](https://ollama.com) |
-| **OpenAI** | Paid | Excellent | GPT-4o recommended for synthesis |
-| **Anthropic** | Paid | Excellent | Claude Sonnet for deep reasoning |
-| **DeepSeek** | ~$0 (very cheap) | High | $0.00014/1K tokens |
-
-### Recommended Setup (free, much better quality)
-
-Add these two agents, disable the built-in Pollinations agents:
+Add two Groq agents — one specialist, one synthesizer:
 
 ```
+Name:     Groq Specialist
 Provider: groq
 Model:    llama-3.3-70b-versatile
-Role:     specialist   (this auto-assigns all 7 roles)
+Role:     specialist
 Key:      [from console.groq.com]
 
+Name:     Groq Synthesizer
 Provider: groq
 Model:    llama-3.3-70b-versatile
 Role:     synthesizer
 Key:      [same key]
 ```
 
-### Best Setup (mixed free + paid)
+That's it. The specialist role auto-rotates across all 7 analytical domains.
+
+### Best Setup (Mixed)
 
 ```
-7 specialist agents (one per role):
-  macro, sentiment, social_sentiment, supply_chain,
-  technical, geopolitical, sector
-  → Groq or Gemini Flash (fast + free)
-
-1 synthesizer:
-  → GPT-4o or Claude Sonnet (smarter for final verdict)
-
-Optional: 1 super_synthesizer
-  → For reconciling if you have multiple synthesizers
+7 specialist agents (one per role) → Groq llama-3.3-70b-versatile (fast, free)
+1 synthesizer                      → OpenAI gpt-4o-mini or Anthropic claude-3-5-haiku
 ```
 
-### Testing Agents
+---
 
-Click the **test** button next to any agent to verify connectivity before running analysis.
+## Agent Roles
+
+### Phase 1 — Specialists
+
+Each runs concurrently. Each writes independent findings to the IntelGraph.
+
+| Role | Analyzes |
+|------|---------|
+| `specialist` | Auto round-robin across all 7 roles below |
+| `macro` | Interest rates, inflation, GDP, central bank guidance, yield curves, currency flows |
+| `sentiment` | News narratives, options P/C ratio, insider trades, short interest, fear/greed |
+| `supply` | Weather (8 regions), 18 commodity moves, shipping BDI, agricultural reports |
+| `technical` | OHLCV price action, estimated RSI, volume, momentum, support/resistance |
+| `geo` | Conflicts, sanctions, trade policy, regulatory actions (SEC/FDA/FTC) |
+| `sector` | Earnings calendar, EPS estimates, analyst ratings/targets, insider activity |
+| `social` | Reddit (7 subs), StockTwits native sentiment, manipulation detection |
+
+### Phase 2 — Synthesizer
+
+Reads the **complete assembled IntelGraph** — all nodes, all causal edges, all signal votes —
+and produces the final probability verdict. Does NOT see raw agent outputs, only the graph.
 
 ---
 
 ## Data Sources
 
-All free. No API key required unless noted.
+### Market (Yahoo Finance + optional Alpha Vantage)
+Price, OHLCV history (60 days), options chain (P/C ratio, open interest, IV), analyst ratings
+and target prices, earnings calendar (next date, EPS estimate, last surprise), insider
+transactions (buys vs. sells), short interest
 
-### Market Data
-- **Price & OHLCV**: Yahoo Finance (default), Alpha Vantage (optional, better quality)
-- **Options chain**: Put/call ratio, open interest, implied volatility
-- **Analyst ratings**: Target price, consensus, recent upgrades/downgrades
-- **Earnings calendar**: Next date, EPS estimate, last earnings surprise percentage
-- **Insider transactions**: Recent buys vs. sells, net signal
-- **Short interest**: Short percentage of float, short ratio
+### News (15 RSS feeds)
+Reuters, Yahoo Finance, CNBC, MarketWatch, Bloomberg Economics, NYT Business, Seeking Alpha,
+WSJ, FT, TechCrunch, HackerNews, VentureBeat, ZeroHedge, TheStreet, Motley Fool
 
-### Financial News (20 RSS feeds)
-Reuters Business, Reuters Tech, Yahoo Finance, CNBC, MarketWatch, Bloomberg Economics, NYT Business, Financial Times, Seeking Alpha, WSJ Markets, Dow Jones Markets, Investing.com, TechCrunch, Ars Technica, HackerNews, VentureBeat, TheStreet, Motley Fool, ZeroHedge
+### Central Banks & Macro (6 feeds)
+Federal Reserve, ECB, IMF, BLS (Jobs/CPI), BEA (GDP), US Treasury
 
-### Central Banks & Macro (12 feeds)
-Federal Reserve, ECB, BIS, IMF, World Bank, WTO, BLS (jobs/CPI), BEA (GDP), US Treasury, and more.
+### Weather — 8 Regions (Open-Meteo, free, no key)
+4-day forecast with automatic alert detection (flood risk, drought, extreme heat, frost,
+storm, thunderstorm):
 
-### Weather — 12 Regions (Open-Meteo, free, no key)
-4-day forecast with automatic alert detection:
-
-| Region | Relevance |
-|--------|-----------|
-| US Midwest corn belt | Corn, soy, ethanol |
+| Region | Covers |
+|--------|--------|
+| US Midwest | Corn, soy, ethanol |
 | Great Plains | Winter wheat |
 | Ukraine | Wheat, sunflower |
 | Brazil | Soybeans, coffee, sugar |
-| India | Wheat, rice, cotton |
-| Australia | Wheat, coal, LNG |
-| Indonesia | Palm oil, coal |
 | Texas / Gulf Coast | Crude oil, natural gas |
 | North Sea | Brent crude, natural gas |
-| China | Manufacturing, pork |
-| Argentina | Soybeans, corn, beef |
+| Indonesia | Palm oil, coal |
 | West Africa | Cocoa, crude oil |
 
-Alert types detected automatically: flood risk, drought, extreme heat, frost, storm, thunderstorm, blizzard.
-
-### Commodities (30 instruments via Yahoo Finance)
-Gold, Silver, Platinum, WTI Crude, Brent Crude, Natural Gas, Wheat, Corn, Soybeans, Coffee, Cotton, Cocoa, Sugar, Live Cattle, Lean Hogs, Copper, Aluminum, USD Index, Bitcoin, Ethereum, VIX, US 10Y Yield, EUR/USD, USD/JPY, GBP/USD, USD/CNY, Baltic Dry Index, Heating Oil, Gasoline, Palladium.
+### Commodities (18 via Yahoo Finance)
+Gold, WTI Crude, Brent Crude, Natural Gas, Wheat, Corn, Soybeans, Copper, Silver, Bitcoin,
+Ethereum, VIX, US 10Y Yield, USD Index, Baltic Dry Index, Coffee, Cocoa, Live Cattle
 
 ### Sector Feeds
-- **Agriculture**: USDA, FAO, AgWeb, World Grain
-- **Energy**: EIA, OilPrice, Electrek, PV-Tech
-- **Shipping**: FreightWaves, Splash247, Hellenic Shipping News
-- **Geopolitical**: ReliefWeb, UN News, CFR, Foreign Policy, Al Jazeera, BBC World
-- **Regulatory**: SEC 8-K filings, CFTC, FTC, FDA press releases
-- **Healthcare**: STAT News, Fierce Pharma
-- **ESG**: ESG Today, Carbon Brief
-- **Labor**: BLS employment reports, Layoffs.fyi
-- **Consumer**: NRF Retail, ConsumerAffairs
-- **Crypto**: CoinTelegraph, Decrypt
+Geopolitical: ReliefWeb, UN News, CFR, Al Jazeera  
+Regulatory: SEC 8-K, CFTC, FDA  
+Energy: EIA, OilPrice  
+Agriculture: USDA, FAO  
 
 ### Social Media
-- **Reddit**: 10 subreddits (stocks, investing, wallstreetbets, SecurityAnalysis, StockMarket, options, dividends, ValueInvesting, ETFs, Superstonk)
-- **StockTwits**: Native bullish/bearish sentiment counts
-- **X / Twitter**: Via Nitter (3 fallback instances)
-
-Every social post receives a **manipulation score** (0–100):
-- 0–30: Genuine organic signal
-- 30–60: Biased but informative
-- 60+: Likely coordinated pump/dump attempt
-
-A flagged pump attempt is **itself** a signal — it predicts that someone wants the price to move in that direction.
+Reddit (7 subreddits: stocks, investing, wallstreetbets, SecurityAnalysis, StockMarket,
+options, dividends) — each post scored for manipulation  
+StockTwits — native bullish/bearish counts
 
 ---
 
 ## API Reference
 
-The backend exposes a REST API on port 5001. All routes return `{ "success": true/false, "data": ... }`.
+All endpoints return `{"success": true/false, "data": ...}`.
 
-### Projects — `/api/projects/`
+Real-time progress uses **Server-Sent Events** (`text/event-stream`), not WebSocket.
+The browser's native `EventSource` API connects directly.
 
-```
-GET    /api/projects/           List all projects
-POST   /api/projects/           Create project
-GET    /api/projects/<id>        Get project detail
-PUT    /api/projects/<id>        Update project
-DELETE /api/projects/<id>        Delete project
-POST   /api/projects/<id>/reset  Reset to re-run analysis
-POST   /api/projects/<id>/upload Upload research file
-DELETE /api/projects/<id>/files/<filename>  Remove uploaded file
-```
-
-### Graph Build — `/api/graph/`
+### Sessions — `/api/sessions/`
 
 ```
-POST /api/graph/build            Start pipeline (returns task_id)
-GET  /api/graph/task/<task_id>   Poll build progress (via /api/tasks/)
-GET  /api/graph/<project_id>     Get graph summary + stats
-GET  /api/graph/<project_id>/nodes  List all nodes (filter: ?type=specialist)
-GET  /api/graph/<project_id>/signals  List all agent signal votes
-DELETE /api/graph/<project_id>   Clear graph for rebuild
+GET  /api/sessions/              List all sessions (summary)
+POST /api/sessions/              Create session + start pipeline immediately
+GET  /api/sessions/<id>          Get full session data
+DELETE /api/sessions/<id>        Delete session
+
+GET  /api/sessions/<id>/stream   SSE stream — real-time progress
+POST /api/sessions/<id>/upload   Upload research file (multipart/form-data, field: file)
+POST /api/sessions/<id>/interview      Interview one agent
+POST /api/sessions/<id>/interview/all  Ask all agents same question
 ```
 
-### Simulation — `/api/simulation/`
-
+**Create session** (`POST /api/sessions/`):
+```json
+{
+  "symbol":      "AAPL",
+  "name":        "My Analysis",
+  "asset_type":  "equity",
+  "description": "How might rising rates affect this stock?",
+  "av_key":      "optional-alphavantage-key"
+}
 ```
-POST /api/simulation/                     Create simulation from project
-GET  /api/simulation/                     List all simulations
-GET  /api/simulation/history              Enriched history for dashboard
-GET  /api/simulation/<id>                 Get full simulation
-DELETE /api/simulation/<id>               Delete simulation
 
-POST /api/simulation/<id>/prepare         Extract agent profiles (async)
-GET  /api/simulation/<id>/profiles        List agent profiles
-GET  /api/simulation/<id>/profiles/<aid>  Get single agent profile
-GET  /api/simulation/<id>/status          Real-time status
+**Interview agent** (`POST /api/sessions/<id>/interview`):
+```json
+{
+  "question": "What is your single biggest concern for tomorrow?",
+  "role":     "macro"
+}
+```
 
-POST /api/simulation/<id>/interview       Interview one agent
-POST /api/simulation/<id>/interview/batch Interview multiple agents
-POST /api/simulation/<id>/interview/all   Ask all agents same question
-GET  /api/simulation/<id>/interview/history  All interview results
+**Interview all** (`POST /api/sessions/<id>/interview/all`):
+```json
+{
+  "question": "What would change your signal?"
+}
+```
+
+### SSE Stream Events
+
+Connect with `new EventSource('/api/sessions/<id>/stream')`. Each event is a JSON object:
+
+```js
+// Progress update
+{ "session_id": "s_abc", "status": "running", "progress": 45, "message": "[Phase 1] Macro agent: bullish @72% (3/7)" }
+
+// Enrichment phase (fast result already available)
+{ "status": "enriching", "progress": 68, "message": "Deep research running in background..." }
+
+// Completion — full data available
+{ "done": true, "full": { ...complete session object... } }
 ```
 
 ### Agents — `/api/agents/`
 
 ```
-GET    /api/agents/        List all agents
+GET    /api/agents/        List agents
 POST   /api/agents/        Create agent
 GET    /api/agents/<id>    Get agent
 PUT    /api/agents/<id>    Update agent
@@ -406,53 +338,122 @@ DELETE /api/agents/<id>    Delete agent
 POST   /api/agents/<id>/test  Test connectivity
 ```
 
-### Tasks — `/api/tasks/`
-
+**Create agent** (`POST /api/agents/`):
+```json
+{
+  "name":        "My Groq Agent",
+  "provider":    "groq",
+  "api_key":     "gsk_...",
+  "model":       "llama-3.3-70b-versatile",
+  "role":        "specialist",
+  "description": "Optional description"
+}
 ```
-GET /api/tasks/      List all tasks
-GET /api/tasks/<id>  Get task status + result
-```
 
-Tasks have status: `pending` → `running` → `completed` or `failed`.
-Progress is broadcast via SocketIO (`task_update` events) for real-time UI updates.
-The frontend also falls back to polling if WebSocket is unavailable.
+Valid providers: `groq`, `openrouter`, `google`, `mistral`, `together`, `cerebras`,
+`deepseek`, `openai`, `anthropic`, `ollama`
 
 ### Market — `/api/market/`
 
 ```
-GET /api/market/price/<symbol>     Current price
-GET /api/market/history/<symbol>   OHLCV history (?days=30)
+GET /api/market/price/<symbol>    Current price
+GET /api/market/history/<symbol>  OHLCV history (?days=30)
+```
+
+### Health
+
+```
+GET /api/health    → {"ok": true, "ts": 1234567890}
+```
+
+---
+
+## Pages
+
+**Dashboard** — Latest analysis at a glance: gauge, bull/bear cases, graph preview, session list
+
+**New Analysis** — Enter ticker, research question, upload files, hit Run. Shows the pipeline
+flow diagram so you understand what's happening.
+
+**Run / Session** — Live progress via SSE stream. Switches between **Fast** and **Final**
+predictions as they complete. Full results: gauge, bull/bear cases, butterfly chains, risks,
+catalysts, intelligence graph (interactive ReactFlow), per-agent cards with reasoning, and
+the interview panel.
+
+**Agents** — Full CRUD for LLM agents. Provider guide with notes on free tiers and sign-up
+links. Phase 1 / Phase 2 count display.
+
+**History** — All past sessions with direction, probabilities, confidence, file count, and
+interview count.
+
+---
+
+## Data Storage
+
+Everything local. No external database.
+
+```
+data/
+  sessions.json    All sessions + results (last 500 kept)
+  agents.json      Agent configs (API keys stored here — keep private)
+  uploads/
+    <session_id>/  Uploaded files per session
 ```
 
 ---
 
 ## Configuration
 
-### Environment Variables (`backend/.env`)
+`backend/.env` (auto-created by setup):
 
-Created automatically by `python3 scripts/setup.py`. All optional:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable | Default | Notes |
+|----------|---------|-------|
 | `PORT` | `5001` | Backend port |
 | `FLASK_ENV` | `development` | Set to `production` for deployment |
-| `FRONTEND_URL` | `http://localhost:5173` | CORS allowed origin |
-| `DATA_DIR` | `./data` | Where JSON files and uploads are stored |
-| `LOG_LEVEL` | `INFO` | Logging verbosity (DEBUG/INFO/WARNING) |
-| `MAX_WORKERS` | `5` | Max concurrent agents in Phase 1 |
+| `LOG_LEVEL` | `INFO` | DEBUG/INFO/WARNING |
 
-### Data Storage
+---
 
-Everything stays local. No external database.
+## Architecture
 
 ```
-data/
-  agents.json       Agent configurations (API keys stored here — keep private)
-  projects.json     Project records
-  analyses.json     All analysis results (last 500 kept)
-  simulations.json  Simulation + interview records
-  uploads/
-    <project_id>/   Uploaded research files per project
+backend/
+  app/
+    api/
+      sessions.py   Session CRUD + SSE stream + file upload + interview
+      agents.py     Agent CRUD + connectivity test
+      market.py     Price/history proxy
+    models/
+      session.py    Session dataclass + SessionStore (JSON persistence)
+      agent.py      Agent dataclass + built-in definitions
+    services/
+      llm.py         10 providers (all OpenAI-compat format) + JSON extraction
+      data.py        25+ sources, all parallel, all free
+      graph.py       IntelGraph: nodes, edges, signal votes
+      runner.py      7 specialist roles (dual prompt: full + compact) + synthesizer
+      pipeline.py    3-phase unified pipeline (background thread)
+      agent_store.py Agent JSON persistence
+      file_parser.py PDF/DOCX/TXT/CSV/JSON text extraction
+    utils/
+      logger.py     Named loggers
+    config.py       Config class
+  run.py            Entry point (Flask threaded, no WebSocket deps)
+
+frontend/src/
+  pages/
+    Home.jsx        Dashboard + recent sessions
+    NewRun.jsx      Create analysis + file upload + provider guide
+    Run.jsx         Live SSE stream + full results + interview panel
+    Agents.jsx      Agent management
+    History.jsx     Session history
+  components/
+    Layout.jsx      Nav bar
+    UI.jsx          Card, Tag, Bar, Spin, color helpers
+    Gauge.jsx       SVG probability gauge
+    Graph.jsx       ReactFlow intelligence graph
+  store/index.js    Zustand state
+  utils/api.js      Axios API client
+  main.jsx          Router + entry
 ```
 
 ---
@@ -463,91 +464,49 @@ data/
 docker-compose up --build
 ```
 
-Backend on port 5001, frontend on port 5173 (served by nginx).
-
----
-
-## Architecture
-
-```
-backend/
-  app/
-    api/
-      agents.py       Agent CRUD
-      projects.py     Project lifecycle + file uploads
-      graph.py        Graph build pipeline (async, task-based)
-      simulation.py   Simulation + interview API
-      market.py       Price/history proxy
-      tasks.py        Task status polling
-    models/
-      base.py         Generic JSON file store
-      agent.py        Agent dataclass + built-in definitions
-      project.py      Project dataclass (status lifecycle)
-      task.py         Task + TaskManager (SocketIO broadcast)
-      simulation.py   Simulation + interview records
-    services/
-      llm_client.py   13 LLM providers, JSON extraction (5 strategies), retry
-      data_collector.py  All 25+ data sources, fully parallel
-      graph_builder.py   SharedGraph (nodes, edges, signals)
-      agent_runner.py    7 roles, full+compact prompts, retry logic
-      orchestrator.py    3-phase pipeline (background thread)
-      relevance.py       Asset-type relevance guidance per agent
-      file_parser.py     Text extraction from PDF/DOCX/TXT/CSV/JSON
-      analysis_store.py  Append-only analysis persistence
-    utils/
-      logger.py       Named loggers
-  run.py              Entry point
-
-frontend/src/
-  pages/
-    Dashboard.jsx     Latest results + graph overview
-    Projects.jsx      Project management + file uploads
-    Agents.jsx        Agent CRUD + provider guide
-    Analyze.jsx       Full analysis runner + results viewer
-    Simulation.jsx    Profile extraction + agent interviews
-    History.jsx       Past analyses
-  components/
-    Layout.jsx        Nav + status bar
-    UI.jsx            Shared primitives (Card, Badge, ProgressBar, etc.)
-    Gauge.jsx         SVG probability gauge
-    AgentGraph.jsx    ReactFlow intelligence graph
-    AgentCard.jsx     Per-agent signal + reasoning card
-  hooks/
-    useSocket.js      SocketIO connection + REST polling fallback
-  store/index.js      Zustand global state
-  utils/api.js        Axios API client
-```
+Backend port 5001, frontend port 5173 (nginx proxy).
 
 ---
 
 ## Troubleshooting
 
-**Built-in agents not appearing**
-Delete `data/agents.json` and restart the backend — it re-seeds the 8 free agents on startup.
-
-**"Unparseable output" from agents**
-The system auto-retries with a simpler prompt. If it happens frequently with free agents, add a Groq agent (free, much more reliable JSON output). The JSON extractor uses 5 strategies before giving up: parse as-is → strip markdown → extract `{...}` block → find object with `signal` key → prose extraction.
+**No agents configured**
+Go to **Agents** tab. Add a Groq agent. Get a free key at [console.groq.com](https://console.groq.com) — takes 2 minutes.
 
 **Price data unavailable**
-Normal without an Alpha Vantage key. Agents still work using all other data sources. For OHLCV history, get a free key at [alphavantage.co](https://www.alphavantage.co) and add it to your project.
+Normal without an Alpha Vantage key. All other data sources still work. Get a free key at
+[alphavantage.co](https://www.alphavantage.co) and add it when creating your session.
 
-**Social data shows 0 posts**
-Reddit and Nitter can rate-limit. StockTwits is more reliable. Analysis still completes — social is one of 25+ categories.
+**"LLM failed" in agent output**
+Usually means the API key is wrong or the model name is incorrect. Test the agent in the
+Agents tab with the **test** button.
 
-**Analysis takes a long time**
-Data collection takes 10–20 seconds (all parallel). Agent calls depend on your LLM provider — free local providers (Ollama) are fastest, free remote providers vary. Groq is typically very fast. The progress bar shows real-time status.
-
-**Port conflict**
-Change `PORT` in `backend/.env` and update the proxy target in `frontend/vite.config.js`.
+**Social data shows 0**
+Reddit can rate-limit. StockTwits is more reliable. Analysis still completes — social is
+one of 25+ data categories.
 
 **Ollama not connecting**
-Set the base URL to `http://localhost:11434` (or your custom host) in the agent configuration.
+Set the base URL field to `http://localhost:11434` in the agent config. Make sure Ollama
+is running with `ollama serve` and the model is pulled: `ollama pull llama3.2`
+
+**Slow analysis**
+Data collection is parallel (10–20 seconds). LLM calls depend on your provider — Groq is
+typically the fastest free option (300+ tokens/second). Reduce the number of agents if speed
+is a priority.
+
+**Port conflict**
+Change `PORT` in `backend/.env`. Update the proxy in `frontend/vite.config.js`:
+```js
+proxy: { '/api': { target: 'http://localhost:YOUR_PORT', ... } }
+```
 
 ---
 
 ## Disclaimer
 
-Not financial advice. Do not make trading decisions based solely on model output. This tool provides probabilistic analysis from AI agents processing public data — it does not predict the future with certainty. Always conduct your own research and consult qualified professionals before making investment decisions.
+Not financial advice. Do not make trading decisions based solely on AI model output.
+This tool provides probabilistic analysis — it does not predict the future with certainty.
+Always conduct your own research and consult qualified professionals.
 
 ---
 
